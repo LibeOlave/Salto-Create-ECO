@@ -72,9 +72,30 @@ def create_ECO(form: InputData):
     # Procesamiento en segundo plano
     def procesamiento():
         # Paso 2: eliminar las etapas que no se usen
+        Estado_fases=['IEAEGZ4IJMB2QSPM','IEAEGZ4IJMB2QSPW','IEAEGZ4IJMB2QSQA','IEAEGZ4IJMB2QSQK','IEAEGZ4IJMCL5JKC']
+        n = form.fase_comienzo
+        if n==1:
+            params={
+                "project":{"customStatusId":f"{Estado_fases[n-1]}"}
+            }
+            update_folder(main_folder_id,params)
+        elif n==2:
+            params={
+                "project":{"customStatusId":f"{Estado_fases[n-1]}"}
+            }
+            update_folder(main_folder_id,params)
+        elif n==3:
+            params={
+                "project":{"customStatusId":f"{Estado_fases[n-1]}"}
+            }
+            update_folder(main_folder_id,params)
+        elif n==4:
+            params={
+                "project":{"customStatusId":f"{Estado_fases[n-1]}"}
+            }
+            update_folder(main_folder_id,params)
         data = get_folder(main_folder_id)
         childIds = data['data'][0]['childIds']
-        n = form.fase_comienzo
         numeros = [1,2,3,4]
         menores = [x for x in numeros if x < n]
         for child_id in childIds:

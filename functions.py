@@ -225,7 +225,7 @@ def update_folder(folder_id,params):
         f'{BASE_URL}/folders/{folder_id}',
         headers=HEADERS,
         verify=SSL,
-        params=params
+        json=params
     )
     if response.status_code != 200:
         print(f'Error al obtener las actualizar de la carpeta {response.json().get("data")[0]["title"]}: {response.status_code} - {response.text}')

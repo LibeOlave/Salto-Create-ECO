@@ -16,4 +16,4 @@ HEADERS = {
     "Authorization": f"Bearer {ACCESS_TOKEN}",
     "Content-Type": "application/json"
 }
-SSL = certifi.where()#"./cert_Salto_SSL.cer"#
+SSL = certifi.where()#"./cert_Salto_SSL.cer"
