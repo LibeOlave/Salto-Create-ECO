@@ -75,12 +75,13 @@ def copy_task(task_id, parent_id, title, prefix):
     return response.json()
 
 # Función para copiar una carpeta del blueprint
-def copy_blueprint_folder(folder_id, parent_id, title, prefix):
+def copy_blueprint_folder(folder_id, parent_id, title, prefix, fecha_inicio):
     try:
         params = {
             'parent': parent_id,
             'title': title,
-            'titlePrefix': prefix
+            'titlePrefix': prefix,
+            'rescheduleDate': fecha_inicio
         }
 
         # Lanzar el trabajo
@@ -235,7 +236,7 @@ def update_task(task_id,params):
         f'{BASE_URL}/tasks/{task_id}',
         headers=HEADERS,
         verify=SSL,
-        params=params
+        json=params
     )
     if response.status_code != 200:
         print(f'Error al actualizar de la tarea {response.json().get("data")[0]["title"]}: {response.status_code} - {response.text}')

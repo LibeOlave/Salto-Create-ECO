@@ -17,6 +17,8 @@ class Referencia(BaseModel):
 
 class CircuitosELECT(BaseModel):
     name: str
+    part_number: str
+    part_version: str
     loop: int
 
 # Formulario
@@ -25,6 +27,7 @@ class InputData(BaseModel):
     title : str
     prefix : str
     fase_comienzo : int
+    fecha_comienzo: str
     documentacion: bool
     embalaje : bool
     etiqueta : bool
@@ -63,7 +66,7 @@ def create_ECO(form: InputData):
     eco_tag = 'IEAEGZ4IJUAIVNFQ'
 
     # Paso 1: copiar el proyecto principal
-    data = copy_blueprint_folder(ECO_blueprint_id, ECOs_para_crear_id, form.title, form.prefix)
+    data = copy_blueprint_folder(ECO_blueprint_id, ECOs_para_crear_id, form.title, form.prefix, form.fecha_comienzo)
     main_folder_id = data['data'][0]['id']
 
     # Procesamiento en segundo plano
@@ -168,16 +171,16 @@ def create_ECO(form: InputData):
                     delete_task(task['id'])
                 else:
                     raw_title = task['title']
-                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name)} (1º loop)'
+                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name).replace("<Part Nr.>",form.circuitos_simp[0].part_number)} (1º loop)'
                     parentId = get_task(task['id'])['data'][0]['parentIds']
                     update_task(task['id'], params)
                     for j in range(form.circuitos_simp[0].loop - 1):
-                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name)} ({j + 2}º loop)'
+                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name).replace("<Part Nr.>",form.circuitos_simp[0].part_number)} ({j + 2}º loop)'
                         copy_task(task['id'], parentId[0], new_title, '')
 
                     for i in range(len(form.circuitos_simp) - 1):
                         for j in range(form.circuitos_simp[i + 1].loop):
-                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[i + 1].name)} ({j + 1}º loop)'
+                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[i + 1].name).replace("<Part Nr.>",form.circuitos_simp[i+1].part_number)} ({j + 1}º loop)'
                             copy_task(task['id'], parentId[0], new_title, '')
 
             elif "circuito complex" in valores:
@@ -185,16 +188,16 @@ def create_ECO(form: InputData):
                     delete_task(task['id'])
                 else:
                     raw_title = task['title']
-                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0])} (1º loop)'
+                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0]).replace("<Part Nr.>",form.circuitos_comp[0].part_number)} (1º loop)'
                     parentId = get_task(task['id'])['data'][0]['parentIds']
                     update_task(task['id'], params)
                     for j in range(form.circuitos_comp[0].loop - 1):
-                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0].name)} ({j + 2}º loop)'
+                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0].name).replace("<Part Nr.>",form.circuitos_comp[0].part_number)} ({j + 2}º loop)'
                         copy_task(task['id'], parentId[0], new_title, '')
 
                     for i in range(len(form.circuitos_comp) - 1):
                         for j in range(form.circuitos_comp[i + 1].loop):
-                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[i + 1].name)} ({j + 1}º loop)'
+                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[i + 1].name).replace("<Part Nr.>",form.circuitos_comp[i+1].part_number)} ({j + 1}º loop)'
                             copy_task(task['id'], parentId[0], new_title, '')
 
             # Piezas mecanicas
@@ -290,36 +293,67 @@ def create_ECO(form: InputData):
             elif "circuito simple" in valores:
                 if len(form.circuitos_simp) == 0:
                     delete_folder(folder['id'])
+                elif n != 3 and 'Redesign' in folder['title']:
+                    pass
                 else:
                     raw_title = folder['title']
-                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name)} (1º loop)'
+                    params = {}
+                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name).replace("<Part Nr.>",form.circuitos_simp[0].part_number)} (1º loop)'
                     parentId = get_folder(folder['id'])['data'][0]['parentIds']
                     update_folder(folder['id'], params)
+                    subtareas_electronicas = get_tasks(folder['id'])
+                    for g in subtareas_electronicas['data']:
+                        params['title'] = f'{g["title"].replace("<CircuitName>", form.circuitos_simp[0].name).replace("<Part Nr.>",form.circuitos_simp[0].part_number)}'
+                        update_task(g['id'],params)
                     for j in range(form.circuitos_simp[0].loop - 1):
-                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name)} ({j + 2}º loop)'
-                        copy_folder(folder['id'], parentId[0], new_title, '')
+                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[0].name).replace("<Part Nr.>",form.circuitos_simp[0].part_number)} ({j + 2}º loop)'
+                        folder_copied = copy_folder(folder['id'], parentId[0], new_title, '')
+                        subtareas_electronicas = get_tasks(folder_copied['data'][0]['id'])
+                        for g in subtareas_electronicas['data']:
+                            params['title'] = f'{g["title"].replace("<CircuitName>", form.circuitos_simp[0].name).replace("<Part Nr.>",form.circuitos_simp[0].part_number)}'
+                            update_task(g['id'],params)
 
                     for i in range(len(form.circuitos_simp) - 1):
                         for j in range(form.circuitos_simp[i + 1].loop):
-                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[i + 1].name)} ({j + 1}º loop)'
-                            copy_folder(folder['id'], parentId[0], new_title, '')
+                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_simp[i + 1].name).replace("<Part Nr.>",form.circuitos_simp[i+1].part_number)} ({j + 1}º loop)'
+                            folder_copied = copy_folder(folder['id'], parentId[0], new_title, '')
+                            subtareas_electronicas = get_tasks(folder_copied['data'][0]['id'])
+                            for g in subtareas_electronicas['data']:
+                                params['title'] = f'{g["title"].replace("<CircuitName>", form.circuitos_simp[i+1].name).replace("<Part Nr.>",form.circuitos_simp[i+1].part_number)}'
+                                update_task(g['id'],params)
 
             elif "circuito complex" in valores:
                 if len(form.circuitos_comp) == 0:
                     delete_folder(folder['id'])
+                elif n != 3 and 'Redesign' in folder['title']:
+                    pass
                 else:
                     raw_title = folder['title']
-                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0].name)} (1º loop)'
+                    params = {}
+                    params['title'] = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0].name).replace("<Part Nr.>",form.circuitos_comp[0].part_number)} (1º loop)'
                     parentId = get_folder(folder['id'])['data'][0]['parentIds']
                     update_folder(folder['id'], params)
+                    subtareas_electronicas = get_tasks(folder['id'])
+                    for g in subtareas_electronicas['data']: 
+                        params['title'] = f'{g["title"].replace("<CircuitName>", form.circuitos_comp[0].name).replace("[Part Nr.]",form.circuitos_comp[0].part_number)}'
+                        update_task(g['id'],params)
                     for j in range(form.circuitos_comp[0].loop - 1):
-                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0].name)} ({j + 2}º loop)'
-                        copy_folder(folder['id'], parentId[0], new_title, '')
+                        new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[0].name).replace("<Part Nr.>",form.circuitos_comp[0].part_number)} ({j + 2}º loop)'
+                        folder_copied = copy_folder(folder['id'], parentId[0], new_title, '')
+                        subtareas_electronicas = get_tasks(folder_copied['data'][0]['id'])
+                        for g in subtareas_electronicas['data']:
+                            params = {}
+                            params['title'] = f'{g["title"].replace("<CircuitName>", form.circuitos_comp[0].name).replace("[Part Nr.]",form.circuitos_comp[0].part_number)}'
+                            update_task(g['id'],params)
 
                     for i in range(len(form.circuitos_comp) - 1):
                         for j in range(form.circuitos_comp[i + 1].loop):
-                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[i + 1].name)} ({j + 1}º loop)'
-                            copy_folder(folder['id'], parentId[0], new_title, '')
+                            new_title = f'{raw_title.replace("<CircuitName>", form.circuitos_comp[i + 1].name).replace("<Part Nr.>",form.circuitos_comp[i+1].part_number)} ({j + 1}º loop)'
+                            folder_copied = copy_folder(folder['id'], parentId[0], new_title, '')
+                            subtareas_electronicas = get_tasks(folder_copied['data'][0]['id'])         
+                            for g in subtareas_electronicas['data']:
+                                params['title'] = f'{g["title"].replace("<CircuitName>", form.circuitos_comp[i+1].name).replace("[Part Nr.]",form.circuitos_comp[i+1].part_number)}'
+                                update_task(g['id'],params)
 
             # Piezas mecanicas
             elif "ref piezas mec afectadas" in valores:
@@ -327,15 +361,25 @@ def create_ECO(form: InputData):
                     delete_folder(folder['id'])
                 else:
                     more_info_folder = get_folder(folder['id'])
-                    raw_title = folder['data'][0]['title']
-                    new_title = raw_title.replace("Part ref.", form.ref[0].ref).replace("Part name", form.ref[0].name)
-                    params = {
-                        'title': new_title
-                    }
-                    update_folder(folder['id'],params)
+                    subtareas_mec = get_tasks(folder['id'])
+                    new_title = 'borrar'
+
                     for i in range(len(form.ref) - 1):
-                        new_title = raw_title.replace("Part ref.", form.ref[i + 1].ref).replace("Part name", form.ref[i + 1].name)
-                        copy_folder(folder['id'],more_info_folder['data'][0]['parentIds'][0], new_title, '')
+                        folder_copied = copy_folder(folder['id'],more_info_folder['data'][0]['parentIds'][0], new_title, '')
+                        subtareas_mec_copied = get_tasks(folder_copied['data'][0]['id'])
+                        for g in subtareas_mec_copied['data']:
+                            params = {
+                               'title': f'{g["title"].replace("Part ref.", form.ref[i+1].ref).replace("Part name",form.ref[i+1].name)}',
+                               'addParents': [folder['id']]
+                            }
+                            update_task(g['id'],params)  
+
+                        delete_folder(folder_copied['data'][0]['id'])
+
+                    for g in subtareas_mec['data']:
+                        params['title'] = f'{g["title"].replace("Part ref.", form.ref[0].ref).replace("Part name",form.ref[0].name)}'
+                        update_task(g['id'],params)    
+
             elif "piezas mecanicas" in valores:
                 if len(form.ref) == 0:
                     delete_folder(folder['id'])
